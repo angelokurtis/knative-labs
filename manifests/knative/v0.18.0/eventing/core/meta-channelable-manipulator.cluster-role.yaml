@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: meta-channelable-manipulator
+  labels:
+    eventing.knative.dev/release: "v0.18.0"
+    duck.knative.dev/channelable: "true"
+# Do not use this role directly. These rules will be added to the "channelable-manipulator" role.
+rules:
+- apiGroups:
+  - messaging.knative.dev
+  resources:
+  - channels
+  - channels/status
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch

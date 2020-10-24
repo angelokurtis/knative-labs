@@ -1,0 +1,85 @@
+# Copyright 2020 The Knative Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mt-broker-filter
+  namespace: knative-eventing
+  labels:
+    eventing.knative.dev/release: "v0.18.0"
+spec:
+  selector:
+    matchLabels:
+      eventing.knative.dev/brokerRole: filter
+  template:
+    metadata:
+      labels:
+        eventing.knative.dev/brokerRole: filter
+        eventing.knative.dev/release: "v0.18.0"
+    spec:
+      serviceAccountName: mt-broker-filter
+      containers:
+      - name: filter
+        terminationMessagePolicy: FallbackToLogsOnError
+        image: gcr.io/knative-releases/knative.dev/eventing/cmd/mtbroker/filter@sha256:0a7038418865483d561b76434f6fef28081705adb57abd88e47017f4c6defdc9
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 9092
+          name: metrics
+          protocol: TCP
+        terminationMessagePath: /dev/termination-log
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: CONTAINER_NAME
+          value: filter
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: knative.dev/internal/eventing
+        - name: FILTER_PORT
+          value: "8080"
+        securityContext:
+          allowPrivilegeEscalation: false
